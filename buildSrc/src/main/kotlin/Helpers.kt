@@ -56,10 +56,8 @@ fun Project.setupCommon() {
         }
         buildTypes {
             getByName("release") {
-                // Disable minification to keep APK under 50MB
-                // ProGuard/R8 obfuscation adds complexity and can cause issues
+                // Keep APK under 50MB - disable both minification and resource shrinking
                 isMinifyEnabled = false
-                isShrinkResources = false
             }
         }
         compileOptions {
