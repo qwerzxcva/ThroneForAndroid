@@ -56,8 +56,9 @@ fun Project.setupCommon() {
         }
         buildTypes {
             getByName("release") {
-                // Keep APK under 50MB - disable both minification and resource shrinking
+                // Disable minification to keep APK clean and under 50MB
                 isMinifyEnabled = false
+                isShrinkResources = false
             }
         }
         compileOptions {
