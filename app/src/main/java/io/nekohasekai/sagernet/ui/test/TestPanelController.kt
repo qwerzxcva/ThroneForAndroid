@@ -219,7 +219,7 @@ class TestPanelController(
         })
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             bottomInset = insets.bars().bottom
-            root.post(::reportHeight)
+            root.post(Runnable { reportHeight() })
             insets
         }
         // Every frame: the stats bar and the FAB move without any layout of this hierarchy.
