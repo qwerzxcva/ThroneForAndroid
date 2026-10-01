@@ -59,6 +59,9 @@ class RouteRule {
         for (f in BOOL_FIELDS) f.set(c, f.get(this))
         c.outbound_id = outbound_id
         c.action = action
+        // non-reflection fields (Int and String not in STRING_FIELDS)
+        c.balancer_pool = balancer_pool
+        c.balancer_pool_tolerance = balancer_pool_tolerance
         return c
     }
 
@@ -89,9 +92,23 @@ class RouteRule {
         }
 
         val obj = JsonObject()
-        if (ip_version.isNotBlank()) obj["ip_version"] = QtStrings.toInt(ip_version)
-        if (network.isNotBlank()) obj["network"] = network.trim()
-        if (protocol.isNotBlank()) obj["protocol"] = protocol.trim()
+        // ip_version also supports multi-select
+        if (ip_version.isNotBlank()) {
+            val verVals = ip_version.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+            if (verVals.size == 1) obj["ip_version"] = QtStrings.toInt(verVals[0])
+            else if (verVals.size > 1) JsonArray.of(*verVals.map { QtStrings.toInt(it) }.toTypedArray()).also { obj["ip_version"] = it }
+        }
+        // network and protocol support multi-select (newline-separated in storage)
+        if (network.isNotBlank()) {
+            val netVals = network.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+            if (netVals.size == 1) obj["network"] = netVals[0]
+            else if (netVals.size > 1) JsonArray.of(*netVals.toTypedArray()).also { obj["network"] = it }
+        }
+        if (protocol.isNotBlank()) {
+            val protoVals = protocol.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
+            if (protoVals.size == 1) obj["protocol"] = protoVals[0]
+            else if (protoVals.size > 1) JsonArray.of(*protoVals.toTypedArray()).also { obj["protocol"] = it }
+        }
         putStrings(obj, "inbound", inbound)
         putStrings(obj, "domain", domain)
         putStrings(obj, "domain_suffix", domain_suffix)
@@ -149,6 +166,32 @@ class RouteRule {
         }
         if (act == "sniff" && sniff_override_dest) obj["override_destination"] = true
         if (act == "resolve" && strategy.isNotBlank()) obj["strategy"] = strategy.trim()
+        // logical rule nesting (asteriskbox / lxbox)
+        if (logical_mode.isNotBlank() && rules_json.isNotBlank()) {
+            obj["type"] = "logical"
+            obj["mode"] = logical_mode.trim()
+            obj["rules"] = JsonInput.parseValue(rules_json) as? JsonArray ?: JsonArray()
+            if (invert) obj["invert"] = true
+            return obj
+        }
+        // urltest balancer (lxbox SPEC 019)
+        if (balancer_mode == "round_robin") {
+            val balancer = JsonObject()
+            if (balancer_pool > 0) balancer["pool"] = balancer_pool
+            if (balancer_pool_tolerance > 0) balancer["pool_tolerance"] = balancer_pool_tolerance
+            val sticky = JsonArray()
+            for (s in balancer_sticky_hash) {
+                val v = s.trim()
+                if (v.isNotEmpty()) sticky.add(v)
+            }
+            if (sticky.isNotEmpty()) balancer["sticky_hash"] = sticky
+            obj["mode"] = "round_robin"
+            obj["balancer"] = balancer
+        }
+        // default_interface_address (asteriskbox)
+        putStrings(obj, "default_interface_address", default_interface_address)
+        // dns_server (route-level DNS server override)
+        putStrings(obj, "dns_server", dns_server)
         return obj
     }
 
@@ -219,6 +262,14 @@ class RouteRule {
         b("no_drop", no_drop)
         b("sniff_override_dest", sniff_override_dest)
         s("strategy", strategy)
+        s("logical_mode", logical_mode)
+        if (rules_json.isNotBlank()) out.add("rules")
+        l("default_interface_address", default_interface_address)
+        l("dns_server", dns_server)
+        s("balancer_mode", balancer_mode)
+        if (balancer_pool != 0) out.add("balancer_pool")
+        if (balancer_pool_tolerance != 0) out.add("balancer_pool_tolerance")
+        l("balancer_sticky_hash", balancer_sticky_hash)
         return out
     }
 
@@ -258,7 +309,7 @@ class RouteRule {
         val STRING_FIELDS: List<KMutableProperty1<RouteRule, String>> = listOf(
             RouteRule::ip_version, RouteRule::network, RouteRule::protocol, RouteRule::reject_method,
             RouteRule::override_address, RouteRule::override_port, RouteRule::tls_spoof,
-            RouteRule::tls_spoof_method, RouteRule::strategy,
+            RouteRule::tls_spoof_method, RouteRule::strategy, RouteRule::logical_mode, RouteRule::balancer_mode,
         )
 
         /** List members; each is the desktop column `<name>_json`. */
@@ -267,7 +318,8 @@ class RouteRule {
             RouteRule::domain_regex, RouteRule::source_ip_cidr, RouteRule::ip_cidr, RouteRule::source_port,
             RouteRule::source_port_range, RouteRule::port, RouteRule::port_range, RouteRule::process_name,
             RouteRule::process_path, RouteRule::process_path_regex, RouteRule::package_name, RouteRule::wifi_ssid,
-            RouteRule::wifi_bssid, RouteRule::rule_set, RouteRule::sniffers,
+            RouteRule::wifi_bssid, RouteRule::rule_set, RouteRule::sniffers, RouteRule::default_interface_address,
+            RouteRule::dns_server, RouteRule::balancer_sticky_hash,
         )
 
         val BOOL_FIELDS: List<KMutableProperty1<RouteRule, Boolean>> = listOf(

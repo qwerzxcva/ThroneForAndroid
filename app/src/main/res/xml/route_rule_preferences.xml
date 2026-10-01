@@ -40,6 +40,24 @@
             app:key="sniff_override_dest"
             app:summary="@string/route_rule_override_destination_sum"
             app:title="@string/route_rule_override_destination" />
+        <!-- lxbox/asteriskbox: logical rule mode -->
+        <moe.matsuri.nb4a.ui.SimpleMenuPreference
+            app:entries="@array/route_rule_logical_mode_entries"
+            app:entryValues="@array/route_rule_logical_mode_values"
+            app:icon="@drawable/ic_baseline_link_24"
+            app:key="logical_mode"
+            app:title="@string/route_rule_logical_mode"
+            app:useSimpleSummaryProvider="true"
+            app:persistent="false" />
+        <!-- lxbox: load balancer mode -->
+        <moe.matsuri.nb4a.ui.SimpleMenuPreference
+            app:entries="@array/route_rule_balancer_mode_entries"
+            app:entryValues="@array/route_rule_balancer_mode_values"
+            app:icon="@drawable/ic_baseline_balance_24"
+            app:key="balancer_mode"
+            app:title="@string/route_rule_balancer_mode"
+            app:useSimpleSummaryProvider="true"
+            app:persistent="false" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/route_rule_category_match">
@@ -112,18 +130,20 @@
             app:dialogMessage="@string/route_rule_port_range_hint"
             app:key="source_port_range"
             app:title="@string/route_rule_source_port_range" />
-        <moe.matsuri.nb4a.ui.SimpleMenuPreference
+        <androidx.preference.MultiSelectListPreference
             app:entries="@array/route_rule_network_entries"
             app:entryValues="@array/route_rule_network_values"
             app:key="network"
             app:title="@string/route_rule_network"
-            app:useSimpleSummaryProvider="true" />
-        <moe.matsuri.nb4a.ui.SimpleMenuPreference
+            app:useSimpleSummaryProvider="true"
+            app:persistent="false" />
+        <androidx.preference.MultiSelectListPreference
             app:entries="@array/route_rule_protocol_entries"
             app:entryValues="@array/route_rule_protocol_values"
             app:key="protocol"
             app:title="@string/route_rule_protocol"
-            app:useSimpleSummaryProvider="true" />
+            app:useSimpleSummaryProvider="true"
+            app:persistent="false" />
         <moe.matsuri.nb4a.ui.SimpleMenuPreference
             app:entries="@array/route_rule_ip_version_entries"
             app:entryValues="@array/route_rule_ip_version_values"
@@ -170,6 +190,37 @@
             app:dialogMessage="@string/route_rule_lines_hint"
             app:key="wifi_bssid"
             app:title="@string/route_rule_wifi_bssid" />
+        <!-- lxbox/asteriskbox extensions -->
+        <io.nekohasekai.sagernet.widget.StringLinesPreference
+            app:icon="@drawable/ic_baseline_rule_folder_24"
+            app:key="rules_json"
+            app:title="@string/route_rule_rules_json"
+            app:persistent="false" />
+        <io.nekohasekai.sagernet.widget.StringLinesPreference
+            app:icon="@drawable/ic_baseline_network_cell_24"
+            app:key="default_interface_address"
+            app:title="@string/route_rule_default_interface_address"
+            app:persistent="false" />
+        <io.nekohasekai.sagernet.widget.StringLinesPreference
+            app:icon="@drawable/ic_baseline_dns_24"
+            app:key="dns_server"
+            app:title="@string/route_rule_dns_server"
+            app:persistent="false" />
+        <EditTextPreference
+            app:key="balancer_pool"
+            app:title="@string/route_rule_balancer_pool"
+            app:useSimpleSummaryProvider="true"
+            app:persistent="false" />
+        <EditTextPreference
+            app:key="balancer_pool_tolerance"
+            app:title="@string/route_rule_balancer_pool_tolerance"
+            app:useSimpleSummaryProvider="true"
+            app:persistent="false" />
+        <io.nekohasekai.sagernet.widget.StringLinesPreference
+            app:icon="@drawable/ic_baseline_sticky_note_24"
+            app:key="balancer_sticky_hash"
+            app:title="@string/route_rule_balancer_sticky_hash"
+            app:persistent="false" />
     </PreferenceCategory>
 
 </PreferenceScreen>

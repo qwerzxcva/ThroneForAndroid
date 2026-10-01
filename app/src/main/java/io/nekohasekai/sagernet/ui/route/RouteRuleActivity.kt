@@ -13,6 +13,7 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.MultiSelectListPreference
 import androidx.preference.SwitchPreference
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import io.nekohasekai.sagernet.Key
@@ -29,7 +30,9 @@ import io.nekohasekai.sagernet.ui.ThemedActivity
 import io.nekohasekai.sagernet.ui.WifiPermissionFlow
 import io.nekohasekai.sagernet.ui.profile.multilineInput
 import io.nekohasekai.sagernet.ui.profile.portInput
+import io.nekohasekai.sagernet.outbound.json.JsonInput
 import io.nekohasekai.sagernet.ui.profile.setVisible
+import org.json.JSONObject
 import io.nekohasekai.sagernet.ui.settings.LinesSummaryProvider
 import io.nekohasekai.sagernet.utils.PackageCache
 import io.nekohasekai.sagernet.utils.WifiStateAccess
@@ -59,12 +62,13 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
 
         private val TEXT_KEYS = listOf(
             "name", "action", "outbound_id", "reject_method", "strategy", "network", "protocol", "ip_version",
-            "override_address", "override_port",
+            "override_address", "override_port", "logical_mode", "balancer_mode",
         )
         private val LIST_KEYS = listOf(
             "domain_suffix", "domain", "ip_cidr", "rule_set", "package_name", "domain_keyword", "domain_regex",
             "source_ip_cidr", "port", "port_range", "source_port", "source_port_range", "inbound", "process_name",
             "process_path", "process_path_regex", "wifi_ssid", "wifi_bssid",
+            "default_interface_address", "dns_server", "balancer_sticky_hash",
         )
         private val BOOL_KEYS = listOf("sniff_override_dest", "ip_is_private", "source_ip_is_private", "invert", "no_drop")
 
@@ -74,6 +78,8 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             "port_range", "source_port", "source_port_range", "network", "protocol", "ip_version", "inbound", "invert",
             "override_address", "override_port", "no_drop", "process_name", "process_path", "process_path_regex",
             "wifi_ssid", "wifi_bssid",
+            "logical_mode", "rules_json", "default_interface_address", "dns_server",
+            "balancer_mode", "balancer_pool", "balancer_pool_tolerance", "balancer_sticky_hash",
         )
 
         /** Android names apps by package, never by process: these show only when a desktop rule brought a value. */
@@ -262,13 +268,64 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             if (!host.loaded) return
             addPreferencesFromResource(R.xml.route_rule_preferences)
 
-            setupOutbounds()
-            for (key in listOf("action", "reject_method", "strategy", "network", "protocol", "ip_version")) {
-                findPreference<SimpleMenuPreference>(key)?.ensureValue()
+            // Add JSON import button to the Rule category
+            val ruleCat = findPreference<PreferenceCategory>(null) // first category
+            // Instead, add a preference programmatically at the end of the first category
+            val jsonPastePref = Preference(requireContext()).apply {
+                key = "jsonPaste"
+                title = getString(R.string.route_rule_json_paste)
+                icon = android.R.drawable.ic_menu_edit
+            }
+            jsonPastePref.setOnPreferenceClickListener {
+                showJsonPasteDialog()
+                true
+            }
+            // Find the rule category and add after sniff_override_dest
+            findPreference<Preference>("sniff_override_dest")?.let {
+                preferenceScreen.addPreference(jsonPastePref)
+            } ?: run {
+                preferenceScreen.addPreference(jsonPastePref)
             }
 
-            val multiline = LIST_KEYS - setOf("rule_set", "package_name")
+            setupOutbounds()
+            for (key in listOf("action", "reject_method", "strategy", "ip_version")) {
+                findPreference<SimpleMenuPreference>(key)?.ensureValue()
+            }
+            // network and protocol support multi-select (join with newline for storage)
+            for (key in listOf("network", "protocol")) {
+                findPreference<MultiSelectListPreference>(key)?.apply {
+                    val stored = DataStore.profileCacheStore.getString(key)
+                    if (!stored.isNullOrBlank()) {
+                        value = stored.split("\n").filter { it.isNotBlank() }.toSet()
+                    }
+                    setOnPreferenceChangeListener { _, newVal ->
+                        val joined = when (newVal) {
+                            is Collection<*> -> newVal.joinToString("\n") { it.toString() }
+                            is String -> newVal
+                            else -> return@setOnPreferenceChangeListener false
+                        }
+                        DataStore.profileCacheStore.putString(key, joined)
+                        true
+                    }
+                }
+            }
+
+            val multiline = LIST_KEYS - setOf("rule_set", "package_name", "rules_json")
             multilineInput(*multiline.toTypedArray())
+            // rules_json is raw JSON, not line-separated values — use plain EditTextPreference
+            findPreference<EditTextPreference>("rules_json")?.apply {
+                dialogMessage = getString(R.string.route_rule_rules_json_hint)
+                setOnBindEditTextListener { et ->
+                    val v = DataStore.profileCacheStore.getString("rules_json") ?: ""
+                    et.setText(v)
+                    et.setSelection(et.text.length)
+                }
+                setOnPreferenceChangeListener { _, newVal ->
+                    val s = newVal as? String ?: return@setOnPreferenceChangeListener false
+                    DataStore.profileCacheStore.putString("rules_json", s)
+                    true
+                }
+            }
             for (key in multiline) findPreference<EditTextPreference>(key)?.summaryProvider = LinesSummaryProvider(maxLines = 3)
             refreshWifiHint()
             portInput("override_port")
@@ -291,6 +348,32 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
                 setOnPreferenceClickListener {
                     host.appPicker.launch(values)
                     true
+                }
+            }
+            // JSON paste import for logical rules / balancer config
+            findPreference<Preference>(R.string.route_rule_json_paste)?.apply {
+                setOnPreferenceClickListener {
+                    showJsonPasteDialog()
+                    true
+                }
+            }
+            // balancer_pool and balancer_pool_tolerance are Int EditTextPreferences — parse as integers
+            for (key in listOf("balancer_pool", "balancer_pool_tolerance")) {
+                findPreference<EditTextPreference>(key)?.apply {
+                    setOnBindEditTextListener { et ->
+                        val v = DataStore.profileCacheStore.getString(key) ?: "0"
+                        et.setText(if (v.isBlank()) "0" else v)
+                        et.setSelection(et.text.length)
+                    }
+                    setOnPreferenceChangeListener { _, newVal ->
+                        val s = newVal as? String ?: return@setOnPreferenceChangeListener false
+                        if (s.isEmpty() || s.toIntOrNull() != null) {
+                            DataStore.profileCacheStore.putString(key, s)
+                            true
+                        } else {
+                            false
+                        }
+                    }
                 }
             }
             findPreference<Preference>(KEY_ADVANCED_TOGGLE)!!.setOnPreferenceClickListener {
@@ -368,6 +451,136 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             entries = entryList.toTypedArray()
             entryValues = valueList.toTypedArray()
             value = v
+        }
+
+        /** Paste a sing-box rule JSON fragment and merge fields into the current rule. */
+        private fun showJsonPasteDialog() {
+            val ed = EditTextPreference(requireContext()).also { it.dialogLayoutResource = android.R.layout.simple_dialog }
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.route_rule_json_paste_title)
+                .setMessage(R.string.route_rule_json_paste_hint)
+                .setView(ed)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    val text = ed.text?.trim() ?: return@setPositiveButton
+                    try {
+                        val obj = JsonInput.parseValue(text) as? JSONObject
+                            ?: throw IllegalArgumentException("not a JSON object")
+                        val imported = mergeRuleFromJson(host.rule, obj)
+                        DataStore.dirty = true
+                        host.message(R.string.route_rule_json_paste_success,
+                            getString(R.string.route_rule_json_paste_success, imported))
+                        fragment?.refreshState()
+                    } catch (e: Exception) {
+                        host.message(R.string.route_rule_invalid_title,
+                            getString(R.string.route_rule_json_paste_error, e.message))
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+
+        /** Merge fields from a sing-box rule JSON fragment into [rule]. Returns count of fields merged. */
+        private fun mergeRuleFromJson(rule: RouteRule, obj: JSONObject): Int {
+            var count = 0
+            fun setStr(key: String, setter: (String) -> Unit) {
+                if (obj.has(key)) { setter(obj.optString(key)); count++ }
+            }
+            fun setList(key: String, setter: (List<String>) -> Unit) {
+                if (obj.has(key)) {
+                    val arr = obj.optJSONArray(key)
+                    if (arr != null) {
+                        setter((0 until arr.length()).map { arr.optString(it) }.filter { it.isNotBlank() })
+                        count++
+                    }
+                }
+            }
+            fun setBool(key: String, setter: (Boolean) -> Unit) {
+                if (obj.has(key)) { setter(obj.optBoolean(key)); count++ }
+            }
+            fun setInt(key: String, setter: (Int) -> Unit) {
+                if (obj.has(key)) { setter(obj.optInt(key)); count++ }
+            }
+
+            setStr("logical_mode") { rule.logical_mode = it; DataStore.profileCacheStore.putString("logical_mode", it) }
+            setStr("balancer_mode") { rule.balancer_mode = it; DataStore.profileCacheStore.putString("balancer_mode", it) }
+            if (obj.has("network")) {
+                val netArr = obj.optJSONArray("network")
+                if (netArr != null) {
+                    val vals = (0 until netArr.length()).map { netArr.optString(it) }.filter { it.isNotBlank() }
+                    rule.network = vals.joinToString("\n")
+                    DataStore.profileCacheStore.putString("network", rule.network)
+                    count++
+                }
+            }
+            if (obj.has("protocol")) {
+                val protoArr = obj.optJSONArray("protocol")
+                if (protoArr != null) {
+                    val vals = (0 until protoArr.length()).map { protoArr.optString(it) }.filter { it.isNotBlank() }
+                    rule.protocol = vals.joinToString("\n")
+                    DataStore.profileCacheStore.putString("protocol", rule.protocol)
+                    count++
+                }
+            }
+            setStr("ip_version") { rule.ip_version = it; DataStore.profileCacheStore.putString("ip_version", it) }
+            setStr("strategy") { rule.strategy = it; DataStore.profileCacheStore.putString("strategy", it) }
+            setStr("reject_method") { rule.reject_method = it; DataStore.profileCacheStore.putString("reject_method", it) }
+            setStr("override_address") { rule.override_address = it; DataStore.profileCacheStore.putString("override_address", it) }
+            setStr("override_port") { rule.override_port = it; DataStore.profileCacheStore.putString("override_port", it) }
+            setStr("tls_spoof") { rule.tls_spoof = it; DataStore.profileCacheStore.putString("tls_spoof", it) }
+            setStr("tls_spoof_method") { rule.tls_spoof_method = it; DataStore.profileCacheStore.putString("tls_spoof_method", it) }
+            setStr("name") { rule.name = it; DataStore.profileCacheStore.putString("name", it) }
+            setStr("action") { rule.action = it; DataStore.profileCacheStore.putString("action", it) }
+            setInt("outbound_id") { rule.outbound_id = it.toLong(); DataStore.profileCacheStore.putString("outbound_id", it.toString()) }
+            setBool("invert") { rule.invert = it; DataStore.profileCacheStore.putBoolean("invert", it) }
+            setBool("no_drop") { rule.no_drop = it; DataStore.profileCacheStore.putBoolean("no_drop", it) }
+            setBool("ip_is_private") { rule.ip_is_private = it; DataStore.profileCacheStore.putBoolean("ip_is_private", it) }
+            setBool("source_ip_is_private") { rule.source_ip_is_private = it; DataStore.profileCacheStore.putBoolean("source_ip_is_private", it) }
+            setBool("sniff_override_dest") { rule.sniff_override_dest = it; DataStore.profileCacheStore.putBoolean("sniff_override_dest", it) }
+            setList("domain") { rule.domain = it; DataStore.profileCacheStore.putString("domain", it.joinToString("\n")) }
+            setList("domain_suffix") { rule.domain_suffix = it; DataStore.profileCacheStore.putString("domain_suffix", it.joinToString("\n")) }
+            setList("domain_keyword") { rule.domain_keyword = it; DataStore.profileCacheStore.putString("domain_keyword", it.joinToString("\n")) }
+            setList("domain_regex") { rule.domain_regex = it; DataStore.profileCacheStore.putString("domain_regex", it.joinToString("\n")) }
+            setList("ip_cidr") { rule.ip_cidr = it; DataStore.profileCacheStore.putString("ip_cidr", it.joinToString("\n")) }
+            setList("source_ip_cidr") { rule.source_ip_cidr = it; DataStore.profileCacheStore.putString("source_ip_cidr", it.joinToString("\n")) }
+            setList("port") { rule.port = it; DataStore.profileCacheStore.putString("port", it.joinToString("\n")) }
+            setList("port_range") { rule.port_range = it; DataStore.profileCacheStore.putString("port_range", it.joinToString("\n")) }
+            setList("source_port") { rule.source_port = it; DataStore.profileCacheStore.putString("source_port", it.joinToString("\n")) }
+            setList("source_port_range") { rule.source_port_range = it; DataStore.profileCacheStore.putString("source_port_range", it.joinToString("\n")) }
+            setList("process_name") { rule.process_name = it; DataStore.profileCacheStore.putString("process_name", it.joinToString("\n")) }
+            setList("process_path") { rule.process_path = it; DataStore.profileCacheStore.putString("process_path", it.joinToString("\n")) }
+            setList("process_path_regex") { rule.process_path_regex = it; DataStore.profileCacheStore.putString("process_path_regex", it.joinToString("\n")) }
+            setList("package_name") { rule.package_name = it; DataStore.profileCacheStore.putString("package_name", it.joinToString("\n")) }
+            setList("rule_set") { rule.rule_set = it; DataStore.profileCacheStore.putString("rule_set", it.joinToString("\n")) }
+            setList("inbound") { rule.inbound = it; DataStore.profileCacheStore.putString("inbound", it.joinToString("\n")) }
+            setList("wifi_ssid") { rule.wifi_ssid = it; DataStore.profileCacheStore.putString("wifi_ssid", it.joinToString("\n")) }
+            setList("wifi_bssid") { rule.wifi_bssid = it; DataStore.profileCacheStore.putString("wifi_bssid", it.joinToString("\n")) }
+            setList("sniffers") { rule.sniffers = it; DataStore.profileCacheStore.putString("sniffers", it.joinToString("\n")) }
+            setList("default_interface_address") { rule.default_interface_address = it; DataStore.profileCacheStore.putString("default_interface_address", it.joinToString("\n")) }
+            setList("dns_server") { rule.dns_server = it; DataStore.profileCacheStore.putString("dns_server", it.joinToString("\n")) }
+            setList("balancer_sticky_hash") { rule.balancer_sticky_hash = it; DataStore.profileCacheStore.putString("balancer_sticky_hash", it.joinToString("\n")) }
+            if (obj.has("rules")) {
+                val rulesArr = obj.optJSONArray("rules")
+                if (rulesArr != null) {
+                    val sb = StringBuilder()
+                    for (i in 0 until rulesArr.length()) {
+                        if (i > 0) sb.append("\n")
+                        sb.append(rulesArr.optString(i))
+                    }
+                    rule.rules_json = rulesArr.toString()
+                    DataStore.profileCacheStore.putString("rules_json", rule.rules_json)
+                    count++
+                }
+            }
+            if (obj.has("pool")) { rule.balancer_pool = obj.optInt("pool"); DataStore.profileCacheStore.putString("balancer_pool", rule.balancer_pool.toString()); count++ }
+            if (obj.has("pool_tolerance")) { rule.balancer_pool_tolerance = obj.optInt("pool_tolerance"); DataStore.profileCacheStore.putString("balancer_pool_tolerance", rule.balancer_pool_tolerance.toString()); count++ }
+            if (obj.has("mode")) {
+                val m = obj.optString("mode")
+                if (m == "round_robin") { rule.balancer_mode = "round_robin"; DataStore.profileCacheStore.putString("balancer_mode", "round_robin") }
+                if (m == "and" || m == "or") { rule.logical_mode = m; DataStore.profileCacheStore.putString("logical_mode", m) }
+                if (m.isNotBlank() && m != "round_robin" && m != "and" && m != "or") { rule.balancer_mode = m; DataStore.profileCacheStore.putString("balancer_mode", m) }
+                count++
+            }
+            return count
         }
 
         /** Shows the fields of the chosen action and counts the advanced fields that are set. */
