@@ -268,9 +268,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             if (!host.loaded) return
             addPreferencesFromResource(R.xml.route_rule_preferences)
 
-            // Add JSON import button to the Rule category
-            val ruleCat = findPreference<PreferenceCategory>(null) // first category
-            // Instead, add a preference programmatically at the end of the first category
+            // Add JSON import button after sniff_override_dest in the Rule category
             val jsonPastePref = Preference(requireContext()).apply {
                 key = "jsonPaste"
                 title = getString(R.string.route_rule_json_paste)
@@ -280,10 +278,17 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
                 showJsonPasteDialog()
                 true
             }
-            // Find the rule category and add after sniff_override_dest
-            findPreference<Preference>("sniff_override_dest")?.let {
-                preferenceScreen.addPreference(jsonPastePref)
-            } ?: run {
+            // Insert after sniff_override_dest preference
+            val sniffPref = findPreference<Preference>("sniff_override_dest")
+            if (sniffPref != null) {
+                val idx = preferenceScreen.preferenceCount - 1
+                for (i in 0 until preferenceScreen.preferenceCount) {
+                    if (preferenceScreen.getPreference(i) == sniffPref) {
+                        preferenceScreen.addPreference(i + 1, jsonPastePref)
+                        break
+                    }
+                }
+            } else {
                 preferenceScreen.addPreference(jsonPastePref)
             }
 
@@ -347,13 +352,6 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
                 }
                 setOnPreferenceClickListener {
                     host.appPicker.launch(values)
-                    true
-                }
-            }
-            // JSON paste import for logical rules / balancer config
-            findPreference<Preference>(R.string.route_rule_json_paste)?.apply {
-                setOnPreferenceClickListener {
-                    showJsonPasteDialog()
                     true
                 }
             }
@@ -455,13 +453,18 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
 
         /** Paste a sing-box rule JSON fragment and merge fields into the current rule. */
         private fun showJsonPasteDialog() {
-            val ed = EditTextPreference(requireContext()).also { it.dialogLayoutResource = android.R.layout.simple_dialog }
+            val input = androidx.appcompat.widget.AppCompatEditText(requireContext()).apply {
+                hint = getString(R.string.route_rule_json_paste_hint)
+                setSingleLine(false)
+                maxLines = 10
+                minLines = 5
+                setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 12f)
+            }
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.route_rule_json_paste_title)
-                .setMessage(R.string.route_rule_json_paste_hint)
-                .setView(ed)
+                .setView(input)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
-                    val text = ed.text?.trim() ?: return@setPositiveButton
+                    val text = input.text?.toString()?.trim() ?: return@setPositiveButton
                     try {
                         val obj = JsonInput.parseValue(text) as? JSONObject
                             ?: throw IllegalArgumentException("not a JSON object")
@@ -530,7 +533,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             setStr("tls_spoof_method") { rule.tls_spoof_method = it; DataStore.profileCacheStore.putString("tls_spoof_method", it) }
             setStr("name") { rule.name = it; DataStore.profileCacheStore.putString("name", it) }
             setStr("action") { rule.action = it; DataStore.profileCacheStore.putString("action", it) }
-            setInt("outbound_id") { rule.outbound_id = it.toLong(); DataStore.profileCacheStore.putString("outbound_id", it.toString()) }
+            if (obj.has("outbound_id")) { val oid = obj.optLong("outbound_id"); rule.outbound_id = oid; DataStore.profileCacheStore.putString("outbound_id", oid.toString()); count++ }
             setBool("invert") { rule.invert = it; DataStore.profileCacheStore.putBoolean("invert", it) }
             setBool("no_drop") { rule.no_drop = it; DataStore.profileCacheStore.putBoolean("no_drop", it) }
             setBool("ip_is_private") { rule.ip_is_private = it; DataStore.profileCacheStore.putBoolean("ip_is_private", it) }
@@ -561,11 +564,6 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             if (obj.has("rules")) {
                 val rulesArr = obj.optJSONArray("rules")
                 if (rulesArr != null) {
-                    val sb = StringBuilder()
-                    for (i in 0 until rulesArr.length()) {
-                        if (i > 0) sb.append("\n")
-                        sb.append(rulesArr.optString(i))
-                    }
                     rule.rules_json = rulesArr.toString()
                     DataStore.profileCacheStore.putString("rules_json", rule.rules_json)
                     count++

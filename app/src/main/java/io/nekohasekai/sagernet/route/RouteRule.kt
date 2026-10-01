@@ -2,6 +2,7 @@ package io.nekohasekai.sagernet.route
 
 import io.nekohasekai.sagernet.outbound.QtStrings
 import io.nekohasekai.sagernet.outbound.json.JsonArray
+import io.nekohasekai.sagernet.outbound.json.JsonInput
 import io.nekohasekai.sagernet.outbound.json.JsonObject
 import kotlin.reflect.KMutableProperty1
 
@@ -91,6 +92,16 @@ class RouteRule {
             }
         }
 
+        // logical rule nesting (asteriskbox / lxbox) — checked FIRST, before any standard fields
+        if (logical_mode.isNotBlank() && rules_json.isNotBlank()) {
+            val logicalObj = JsonObject()
+            logicalObj["type"] = "logical"
+            logicalObj["mode"] = logical_mode.trim()
+            logicalObj["rules"] = JsonInput.parseValue(rules_json) as? JsonArray ?: JsonArray()
+            if (invert) logicalObj["invert"] = true
+            return logicalObj
+        }
+
         val obj = JsonObject()
         // ip_version also supports multi-select
         if (ip_version.isNotBlank()) {
@@ -166,14 +177,6 @@ class RouteRule {
         }
         if (act == "sniff" && sniff_override_dest) obj["override_destination"] = true
         if (act == "resolve" && strategy.isNotBlank()) obj["strategy"] = strategy.trim()
-        // logical rule nesting (asteriskbox / lxbox)
-        if (logical_mode.isNotBlank() && rules_json.isNotBlank()) {
-            obj["type"] = "logical"
-            obj["mode"] = logical_mode.trim()
-            obj["rules"] = JsonInput.parseValue(rules_json) as? JsonArray ?: JsonArray()
-            if (invert) obj["invert"] = true
-            return obj
-        }
         // urltest balancer (lxbox SPEC 019)
         if (balancer_mode == "round_robin") {
             val balancer = JsonObject()
