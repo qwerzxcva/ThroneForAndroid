@@ -78,6 +78,16 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testOssDebugUnitTest
 
+      - name: Build debug APK
+        run: ./gradlew assembleOssDebug
+
+      - name: Upload APK artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Throne-debug-apk
+          path: app/build/outputs/apk/oss/debug/*.apk
+
       - name: Upload lint report
         if: always()
         uses: actions/upload-artifact@v4
@@ -91,3 +101,27 @@ jobs:
         with:
           name: test-reports
           path: app/build/reports/tests/testOssDebugUnitTest/
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: Throne-debug-apk
+      
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          apk_file=$(ls Throne-*debug*.apk | head -1)
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Release $GITHUB_REF_NAME" \
+            --notes "Auto-built release" \
+            "$apk_file"
