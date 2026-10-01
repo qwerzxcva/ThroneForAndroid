@@ -32,6 +32,35 @@ jobs:
           echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
           $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.1" > /dev/null 2>&1
 
+      - name: Build ThroneCore AAR
+        run: |
+          # Clone and build ThroneCore
+          THRONE_DIR="$(dirname "$GITHUB_WORKSPACE")/Throne"
+          rm -rf "$THRONE_DIR"
+          git init -q "$THRONE_DIR"
+          git -C "$THRONE_DIR" remote add origin https://github.com/throneproj/Throne
+          REF=$(grep 'THRONE_CORE_REF' nb4a.properties | cut -d= -f2)
+          git -C "$THRONE_DIR" fetch -q --depth 1 origin "$REF"
+          git -C "$THRONE_DIR" checkout -q --detach FETCH_HEAD
+          
+          # Install Go and gomobile
+          go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
+          go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          
+          # Install NDK
+          echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;28.2.13676358" > /dev/null 2>&1
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> $GITHUB_ENV
+          
+          # Build AAR
+          DEST="$GITHUB_WORKSPACE/app/libs" bash "$THRONE_DIR/script/build_android.sh"
+          
+          # Generate schema
+          cd "$THRONE_DIR/core"
+          TAGS=$(sed -n 's/^TAGS="\(.*\)"$/\1/p' ../script/build_android.sh)
+          mkdir -p "$GITHUB_WORKSPACE/app/src/main/assets/schema"
+          CGO_ENABLED=0 go run -trimpath -ldflags=-checklinkname=0 -tags "$TAGS,with_purego" ./cmd/schemagen -o "$GITHUB_WORKSPACE/app/src/main/assets/schema/sing-box.json"
+
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
