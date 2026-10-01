@@ -88,6 +88,9 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
 
     private val pbm = PreferenceBindingManager().apply {
         for (key in TEXT_KEYS + LIST_KEYS) text(key)
+        // rules_json is a raw JSON blob (a plain EditTextPreference, not a newline-joined list): bind it too, so
+        // open() writes the current JSON into the cache and save() reads the user's edit back from it.
+        text("rules_json")
         for (key in BOOL_KEYS) bool(key)
     }
 

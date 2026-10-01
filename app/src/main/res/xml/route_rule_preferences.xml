@@ -188,8 +188,10 @@
             app:dialogMessage="@string/route_rule_lines_hint"
             app:key="wifi_bssid"
             app:title="@string/route_rule_wifi_bssid" />
-        <!-- lxbox/asteriskbox extensions -->
-        <io.nekohasekai.sagernet.widget.StringLinesPreference
+        <!-- lxbox/asteriskbox extension: rules_json holds a raw JSON blob, not newline-separated values, so it uses a
+             plain EditTextPreference — the Kotlin code casts findPreference<EditTextPreference>("rules_json"), and a
+             StringLinesPreference here would crash on save. -->
+        <EditTextPreference
             app:icon="@drawable/ic_baseline_rule_folder_24"
             app:key="rules_json"
             app:title="@string/route_rule_rules_json"
