@@ -66,47 +66,29 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build release APK (split ABI)
-        run: ./gradlew assembleOssRelease
+      - name: Generate signing key
+        run: |
+          keytool -genkeypair -v -keystore signing.keystore -alias throne \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass throne123 -keypass throne123 \
+            -dname "CN=Throne, OU=Dev, O=Throne, L=City, S=State, C=CN"
+          cp signing.keystore app/signing.keystore
+
+      - name: Build and sign release APK (arm64 only)
+        run: |
+          cat > app/release.properties << 'EOF'
+          signing.storeFile=signing.keystore
+          signing.storePassword=throne123
+          signing.keyAlias=throne
+          signing.keyPassword=throne123
+          EOF
+          ./gradlew assembleOssRelease -Psigning.enabled=true
 
       - name: List built APKs
         run: find app/build/outputs/apk -name "*.apk" -exec ls -lh {} \;
 
-      - name: Upload Release APKs
+      - name: Upload Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Throne-release-apks
+          name: Throne-release-arm64
           path: app/build/outputs/apk/oss/release/*.apk
-
-      - name: Upload lint report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lint-report
-          path: app/build/reports/lint-results-ossDebug.html
-          if-no-files-found: warn
-
-  release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: build
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download APKs
-        uses: actions/download-artifact@v4
-        with:
-          name: Throne-release-apks
-          path: apk-output
-
-      - name: Create Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ls -lh apk-output/
-          gh release create "$GITHUB_REF_NAME" \
-            --title "Release $GITHUB_REF_NAME" \
-            --notes "Auto-built release from $GITHUB_SHA" \
-            apk-output/*.apk
