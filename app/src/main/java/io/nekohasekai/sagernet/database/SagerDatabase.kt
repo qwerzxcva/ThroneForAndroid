@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 @Database(
     entities = [
         ProxyGroup::class, ProxyEntity::class, RouteProfileEntity::class, RouteRuleEntity::class,
+        DnsServerEntity::class,
         SettingEntry::class, MarkerEntity::class,
     ],
     version = 13,
@@ -228,6 +229,7 @@ abstract class SagerDatabase : RoomDatabase() {
         val routeDao get() = instance.routeDao()
         val settingsDao get() = instance.settingsDao()
         val markerDao get() = instance.markerDao()
+        val dnsServerDao get() = instance.dnsServerDao()
 
     }
 
@@ -236,5 +238,6 @@ abstract class SagerDatabase : RoomDatabase() {
     abstract fun routeDao(): RouteDao
     abstract fun settingsDao(): SettingEntry.Dao
     abstract fun markerDao(): MarkerEntity.Dao
+    abstract fun dnsServerDao(): DnsServerDao
 
 }

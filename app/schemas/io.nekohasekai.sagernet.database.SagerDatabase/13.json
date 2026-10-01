@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 13,
-    "identityHash": "73eea186983fec8d49501a0d7a847afc",
+    "identityHash": "3525468e13426221ac62c4bfb61de28e",
     "entities": [
       {
         "tableName": "groups",
@@ -727,6 +727,92 @@
         ]
       },
       {
+        "tableName": "dns_servers",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `tag` TEXT NOT NULL, `address` TEXT NOT NULL, `type` TEXT NOT NULL, `bind_interface` TEXT NOT NULL, `detour` TEXT NOT NULL, `disable_cache` INTEGER NOT NULL, `disable_expire` INTEGER NOT NULL, `ip_is_private` INTEGER NOT NULL, `client_subnet` TEXT NOT NULL, `reject_expired` INTEGER NOT NULL, `user_order` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tag",
+            "columnName": "tag",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bindInterface",
+            "columnName": "bind_interface",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "detour",
+            "columnName": "detour",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "disableCache",
+            "columnName": "disable_cache",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "disableExpire",
+            "columnName": "disable_expire",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ipIsPrivate",
+            "columnName": "ip_is_private",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clientSubnet",
+            "columnName": "client_subnet",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rejectExpired",
+            "columnName": "reject_expired",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userOrder",
+            "columnName": "user_order",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
         "tableName": "settings",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))",
         "fields": [
@@ -783,7 +869,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '73eea186983fec8d49501a0d7a847afc')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3525468e13426221ac62c4bfb61de28e')"
     ]
   }
 }

@@ -668,4 +668,19 @@
         <item>round_robin</item>
         <item>least_test</item>
     </string-array>
+    <!-- DNS server types -->
+    <string-array name="dns_server_type_entries">
+        <item>UDP</item>
+        <item>TCP</item>
+        <item>DoH (DNS over HTTPS)</item>
+        <item>DoT (DNS over TLS)</item>
+        <item>Gateway</item>
+    </string-array>
+    <string-array name="dns_server_type_values" translatable="false">
+        <item>udp</item>
+        <item>tcp</item>
+        <item>https</item>
+        <item>dot</item>
+        <item>gate</item>
+    </string-array>
 </resources>

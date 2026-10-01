@@ -268,35 +268,16 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             if (!host.loaded) return
             addPreferencesFromResource(R.xml.route_rule_preferences)
 
-            // Add JSON import button after sniff_override_dest in the Rule category
+            // Add JSON import button
             val jsonPastePref = Preference(requireContext()).apply {
                 key = "jsonPaste"
                 title = getString(R.string.route_rule_json_paste)
-                icon = null
             }
             jsonPastePref.setOnPreferenceClickListener {
                 showJsonPasteDialog()
                 true
             }
-            // Insert JSON paste button after sniff_override_dest in the Rule category
-            val sniffPref = findPreference<Preference>("sniff_override_dest")
-            if (sniffPref != null) {
-                var added = false
-                for (i in 0 until preferenceScreen.preferenceCount) {
-                    if (preferenceScreen.getPreference(i) == sniffPref) {
-                        preferenceScreen.addPreference(jsonPastePref)
-                        // Move it: remove last and re-add after sniffPref
-                        preferenceScreen.removePreference(jsonPastePref)
-                        // PreferenceScreen doesn't support insert-by-index; add at end then reorder via category
-                        // Simpler: just add at end of screen (acceptable UX)
-                        added = true
-                        break
-                    }
-                }
-                if (!added) preferenceScreen.addPreference(jsonPastePref)
-            } else {
-                preferenceScreen.addPreference(jsonPastePref)
-            }
+            preferenceScreen.addPreference(jsonPastePref)
 
             setupOutbounds()
             for (key in listOf("action", "reject_method", "strategy", "ip_version")) {
