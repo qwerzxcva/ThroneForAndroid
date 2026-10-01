@@ -45,32 +45,26 @@ jobs:
           git -C "$THRONE_DIR" remote add origin https://github.com/throneproj/Throne
           git -C "$THRONE_DIR" fetch -q --depth 1 origin "$REF"
           git -C "$THRONE_DIR" checkout -q --detach FETCH_HEAD
-          
-          THRONE_CORE_SHA=$(git -C "$THRONE_DIR" rev-parse HEAD)
-          THRONE_CORE_SCRIPT_SHA=$(sha256sum "$THRONE_DIR/script/build_android.sh" | cut -d' ' -f1)
-          
-          # Cache the AAR and schema
-          cache_key="throne-core-${REF}-${THRONE_CORE_SHA}-${THRONE_CORE_SCRIPT_SHA}-${{ hashFiles('.github/actions/throne-core/action.yml') }}"
-          
-          # Install Go
+
+          # Install Go tools first
           go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
           go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          
+          export PATH="$(go env GOPATH)/bin:$PATH"
+
           # Install NDK
           echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;28.2.13676358" > /dev/null 2>&1
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> $GITHUB_ENV
-          
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+
           # Build AAR - run from Throne dir
           cd "$THRONE_DIR"
           DEST="$GITHUB_WORKSPACE/app/libs" bash script/build_android.sh
-          
+
           # Generate schema
           cd "$THRONE_DIR/core"
           TAGS=$(sed -n 's/^TAGS="\(.*\)"$/\1/p' ../script/build_android.sh)
           mkdir -p "$GITHUB_WORKSPACE/app/src/main/assets/schema"
           CGO_ENABLED=0 go run -trimpath -ldflags=-checklinkname=0 -tags "$TAGS,with_purego" ./cmd/schemagen -o "$GITHUB_WORKSPACE/app/src/main/assets/schema/sing-box.json"
-          
+
           # Verify
           test -s "$GITHUB_WORKSPACE/app/libs/ThroneCore.aar"
           test -s "$GITHUB_WORKSPACE/app/src/main/assets/schema/sing-box.json"
