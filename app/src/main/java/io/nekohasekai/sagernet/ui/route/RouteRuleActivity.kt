@@ -276,8 +276,14 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             for (key in listOf("action", "reject_method", "strategy", "network", "protocol", "ip_version")) {
                 findPreference<SimpleMenuPreference>(key)?.ensureValue()
             }
-            val multiline = LIST_KEYS - setOf("rule_set", "package_name", "rules_json")
+            val multiline = LIST_KEYS - setOf("rule_set", "package_name", "rules_json", "default_interface_address", "dns_server", "balancer_sticky_hash")
             multilineInput(*multiline.toTypedArray())
+            // StringLinesPreference fields need custom handling
+            for (key in listOf("default_interface_address", "dns_server", "balancer_sticky_hash")) {
+                findPreference<io.nekohasekai.sagernet.widget.StringLinesPreference>(key)?.apply {
+                    summaryProvider = LinesSummaryProvider(maxLines = 3)
+                }
+            }
             // rules_json is raw JSON, not line-separated values — use plain EditTextPreference
             findPreference<EditTextPreference>("rules_json")?.apply {
                 dialogMessage = getString(R.string.route_rule_rules_json_hint)
