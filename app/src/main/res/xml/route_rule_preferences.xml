@@ -53,7 +53,7 @@
         <moe.matsuri.nb4a.ui.SimpleMenuPreference
             app:entries="@array/route_rule_balancer_mode_entries"
             app:entryValues="@array/route_rule_balancer_mode_values"
-            app:icon="@drawable/ic_baseline_balance_24"
+            app:icon="@drawable/ic_baseline_shuffle_24"
             app:key="balancer_mode"
             app:title="@string/route_rule_balancer_mode"
             app:useSimpleSummaryProvider="true"
@@ -197,12 +197,12 @@
             app:title="@string/route_rule_rules_json"
             app:persistent="false" />
         <io.nekohasekai.sagernet.widget.StringLinesPreference
-            app:icon="@drawable/ic_baseline_network_cell_24"
+            app:icon="@drawable/ic_baseline_nat_24"
             app:key="default_interface_address"
             app:title="@string/route_rule_default_interface_address"
             app:persistent="false" />
         <io.nekohasekai.sagernet.widget.StringLinesPreference
-            app:icon="@drawable/ic_baseline_dns_24"
+            app:icon="@drawable/ic_action_dns"
             app:key="dns_server"
             app:title="@string/route_rule_dns_server"
             app:persistent="false" />
@@ -217,7 +217,7 @@
             app:useSimpleSummaryProvider="true"
             app:persistent="false" />
         <io.nekohasekai.sagernet.widget.StringLinesPreference
-            app:icon="@drawable/ic_baseline_sticky_note_24"
+            app:icon="@drawable/ic_baseline_push_pin_24"
             app:key="balancer_sticky_hash"
             app:title="@string/route_rule_balancer_sticky_hash"
             app:persistent="false" />

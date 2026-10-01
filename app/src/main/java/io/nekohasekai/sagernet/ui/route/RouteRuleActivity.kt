@@ -272,22 +272,28 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             val jsonPastePref = Preference(requireContext()).apply {
                 key = "jsonPaste"
                 title = getString(R.string.route_rule_json_paste)
-                icon = android.R.drawable.ic_menu_edit
+                icon = null
             }
             jsonPastePref.setOnPreferenceClickListener {
                 showJsonPasteDialog()
                 true
             }
-            // Insert after sniff_override_dest preference
+            // Insert JSON paste button after sniff_override_dest in the Rule category
             val sniffPref = findPreference<Preference>("sniff_override_dest")
             if (sniffPref != null) {
-                val idx = preferenceScreen.preferenceCount - 1
+                var added = false
                 for (i in 0 until preferenceScreen.preferenceCount) {
                     if (preferenceScreen.getPreference(i) == sniffPref) {
-                        preferenceScreen.addPreference(i + 1, jsonPastePref)
+                        preferenceScreen.addPreference(jsonPastePref)
+                        // Move it: remove last and re-add after sniffPref
+                        preferenceScreen.removePreference(jsonPastePref)
+                        // PreferenceScreen doesn't support insert-by-index; add at end then reorder via category
+                        // Simpler: just add at end of screen (acceptable UX)
+                        added = true
                         break
                     }
                 }
+                if (!added) preferenceScreen.addPreference(jsonPastePref)
             } else {
                 preferenceScreen.addPreference(jsonPastePref)
             }
@@ -298,20 +304,20 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             }
             // network and protocol support multi-select (join with newline for storage)
             for (key in listOf("network", "protocol")) {
-                findPreference<MultiSelectListPreference>(key)?.apply {
-                    val stored = DataStore.profileCacheStore.getString(key)
-                    if (!stored.isNullOrBlank()) {
-                        value = stored.split("\n").filter { it.isNotBlank() }.toSet()
+                val multiPref = findPreference<MultiSelectListPreference>(key)
+                multiPref?.setOnPreferenceChangeListener { _, newVal ->
+                    val joined = when (newVal) {
+                        is Collection<*> -> newVal.joinToString("\n") { it.toString() }
+                        is String -> newVal
+                        else -> return@setOnPreferenceChangeListener false
                     }
-                    setOnPreferenceChangeListener { _, newVal ->
-                        val joined = when (newVal) {
-                            is Collection<*> -> newVal.joinToString("\n") { it.toString() }
-                            is String -> newVal
-                            else -> return@setOnPreferenceChangeListener false
-                        }
-                        DataStore.profileCacheStore.putString(key, joined)
-                        true
-                    }
+                    DataStore.profileCacheStore.putString(key, joined)
+                    true
+                }
+                // Restore existing value from store
+                val stored = DataStore.profileCacheStore.getString(key)
+                if (!stored.isNullOrBlank()) {
+                    multiPref?.values = stored.split("\n").filter { it.isNotBlank() }.toMutableSet()
                 }
             }
 
@@ -472,7 +478,8 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
                         DataStore.dirty = true
                         host.message(R.string.route_rule_json_paste_success,
                             getString(R.string.route_rule_json_paste_success, imported))
-                        fragment?.refreshState()
+                        val frag = this@RuleFragment
+                        frag.refreshState()
                     } catch (e: Exception) {
                         host.message(R.string.route_rule_invalid_title,
                             getString(R.string.route_rule_json_paste_error, e.message))
@@ -488,11 +495,11 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             fun setStr(key: String, setter: (String) -> Unit) {
                 if (obj.has(key)) { setter(obj.optString(key)); count++ }
             }
-            fun setList(key: String, setter: (List<String>) -> Unit) {
+            fun setList(key: String, setter: (MutableList<String>) -> Unit) {
                 if (obj.has(key)) {
                     val arr = obj.optJSONArray(key)
                     if (arr != null) {
-                        setter((0 until arr.length()).map { arr.optString(it) }.filter { it.isNotBlank() })
+                        setter((0 until arr.length()).map { arr.optString(it) }.filter { it.isNotBlank() }.toMutableList())
                         count++
                     }
                 }

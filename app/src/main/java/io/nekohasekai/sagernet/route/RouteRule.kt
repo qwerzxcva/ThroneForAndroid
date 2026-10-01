@@ -50,6 +50,16 @@ class RouteRule {
     @JvmField var sniffers: MutableList<String> = mutableListOf()
     @JvmField var sniff_override_dest: Boolean = false
     @JvmField var strategy: String = ""
+    // lxbox/asteriskbox extensions
+    @JvmField var logical_mode: String = ""
+    @JvmField var rules_json: String = ""
+    @JvmField var default_interface_address: MutableList<String> = mutableListOf()
+    @JvmField var dns_server: MutableList<String> = mutableListOf()
+    // urltest balancer (lxbox SPEC 019)
+    @JvmField var balancer_mode: String = ""
+    @JvmField var balancer_pool: Int = 0
+    @JvmField var balancer_pool_tolerance: Int = 0
+    @JvmField var balancer_sticky_hash: MutableList<String> = mutableListOf()
 
     fun copy(): RouteRule {
         val c = RouteRule()
