@@ -299,7 +299,10 @@ class BaseService {
             try {
                 data.wifiMonitor?.stop()
             } catch (error: Throwable) {
-                recordCleanupFailure(serviceId, proxyId, proxy?.profile?.id ?: -1L, "wifi-monitor-stop", error, cleanupError)
+                recordCleanupFailure(
+                    serviceId, proxyId, proxy?.profile?.id ?: -1L,
+                    "wifi-monitor-stop", error, cleanupError
+                )
             } finally {
                 data.wifiMonitor = null
             }
@@ -311,13 +314,19 @@ class BaseService {
                         "profileId=${proxy?.profile?.id ?: -1L} stage=proxy-close success"
                 )
             } catch (error: Throwable) {
-                recordCleanupFailure(serviceId, proxyId, proxy?.profile?.id ?: -1L, "proxy-close", error, cleanupError)
+                recordCleanupFailure(
+                    serviceId, proxyId, proxy?.profile?.id ?: -1L,
+                    "proxy-close", error, cleanupError
+                )
             }
 
             try {
                 DefaultNetworkListener.stop(this)
             } catch (error: Throwable) {
-                recordCleanupFailure(serviceId, proxyId, proxy?.profile?.id ?: -1L, "network-listener-stop", error, cleanupError)
+                recordCleanupFailure(
+                    serviceId, proxyId, proxy?.profile?.id ?: -1L,
+                    "network-listener-stop", error, cleanupError
+                )
             }
 
             Logs.i(
