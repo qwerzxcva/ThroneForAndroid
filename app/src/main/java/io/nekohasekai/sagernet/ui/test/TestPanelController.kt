@@ -214,7 +214,7 @@ class TestPanelController(
         // Posted: the listener runs inside the layout pass and the callback may re-layout the list.
         root.addOnLayoutChangeListener(object : View.OnLayoutChangeListener {
             override fun onLayoutChange(v: View?, l: Int, t: Int, r: Int, b: Int, oldL: Int, oldT: Int, oldR: Int, oldB: Int) {
-                root.post { reportHeight() }
+                root.post(Runnable { reportHeight() })
             }
         })
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
