@@ -33,6 +33,13 @@ android {
         viewBinding = true
         aidl = true
     }
+    // Disable minification to keep APK under 50MB and maintain debuggability
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+    }
     namespace = "io.nekohasekai.sagernet"
     packaging {
         jniLibs {
