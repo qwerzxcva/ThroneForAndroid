@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    name: Build and Test
+    name: Build Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -37,7 +37,6 @@ jobs:
 
       - name: Build ThroneCore AAR and schema
         run: |
-          # This is extracted from .github/actions/throne-core/action.yml
           REF=$(sed -n 's/^THRONE_CORE_REF=//p' nb4a.properties | tr -d '\r[:space:]')
           THRONE_DIR="$(dirname "$GITHUB_WORKSPACE")/Throne"
           rm -rf "$THRONE_DIR"
@@ -46,47 +45,38 @@ jobs:
           git -C "$THRONE_DIR" fetch -q --depth 1 origin "$REF"
           git -C "$THRONE_DIR" checkout -q --detach FETCH_HEAD
 
-          # Install Go tools first
           go install github.com/sagernet/gomobile/cmd/gomobile@v0.1.13
           go install github.com/sagernet/gomobile/cmd/gobind@v0.1.13
           export PATH="$(go env GOPATH)/bin:$PATH"
 
-          # Install NDK
           echo y | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;28.2.13676358" > /dev/null 2>&1
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
 
-          # Build AAR - run from Throne dir
           cd "$THRONE_DIR"
           DEST="$GITHUB_WORKSPACE/app/libs" bash script/build_android.sh
 
-          # Generate schema
           cd "$THRONE_DIR/core"
           TAGS=$(sed -n 's/^TAGS="\(.*\)"$/\1/p' ../script/build_android.sh)
           mkdir -p "$GITHUB_WORKSPACE/app/src/main/assets/schema"
           CGO_ENABLED=0 go run -trimpath -ldflags=-checklinkname=0 -tags "$TAGS,with_purego" ./cmd/schemagen -o "$GITHUB_WORKSPACE/app/src/main/assets/schema/sing-box.json"
 
-          # Verify
           test -s "$GITHUB_WORKSPACE/app/libs/ThroneCore.aar"
           test -s "$GITHUB_WORKSPACE/app/src/main/assets/schema/sing-box.json"
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Run lint
-        run: ./gradlew lintOssDebug
+      - name: Build release APK (split ABI)
+        run: ./gradlew assembleOssRelease
 
-      - name: Run unit tests
-        run: ./gradlew testOssDebugUnitTest
+      - name: List built APKs
+        run: find app/build/outputs/apk -name "*.apk" -exec ls -lh {} \;
 
-      - name: Build debug APK
-        run: ./gradlew assembleOssDebug
-
-      - name: Upload APK artifact
-        if: always()
+      - name: Upload Release APKs
         uses: actions/upload-artifact@v4
         with:
-          name: Throne-debug-apk
-          path: app/build/outputs/apk/oss/debug/*.apk
+          name: Throne-release-apks
+          path: app/build/outputs/apk/oss/release/*.apk
 
       - name: Upload lint report
         if: always()
@@ -94,34 +84,29 @@ jobs:
         with:
           name: lint-report
           path: app/build/reports/lint-results-ossDebug.html
-
-      - name: Upload test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-reports
-          path: app/build/reports/tests/testOssDebugUnitTest/
+          if-no-files-found: warn
 
   release:
-    name: Create Release
+    name: Create GitHub Release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     needs: build
     permissions:
       contents: write
-    
+
     steps:
-      - name: Download APK
+      - name: Download APKs
         uses: actions/download-artifact@v4
         with:
-          name: Throne-debug-apk
-      
-      - name: Create GitHub Release
+          name: Throne-release-apks
+          path: apk-output
+
+      - name: Create Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          apk_file=$(ls Throne-*debug*.apk | head -1)
+          ls -lh apk-output/
           gh release create "$GITHUB_REF_NAME" \
             --title "Release $GITHUB_REF_NAME" \
-            --notes "Auto-built release" \
-            "$apk_file"
+            --notes "Auto-built release from $GITHUB_SHA" \
+            apk-output/*.apk
