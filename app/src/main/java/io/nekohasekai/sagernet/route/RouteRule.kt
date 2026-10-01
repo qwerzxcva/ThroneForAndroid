@@ -113,23 +113,9 @@ class RouteRule {
         }
 
         val obj = JsonObject()
-        // ip_version also supports multi-select
-        if (ip_version.isNotBlank()) {
-            val verVals = ip_version.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
-            if (verVals.size == 1) obj["ip_version"] = QtStrings.toInt(verVals[0])
-            else if (verVals.size > 1) JsonArray.of(*verVals.map { QtStrings.toInt(it) }.toTypedArray()).also { obj["ip_version"] = it }
-        }
-        // network and protocol support multi-select (newline-separated in storage)
-        if (network.isNotBlank()) {
-            val netVals = network.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
-            if (netVals.size == 1) obj["network"] = netVals[0]
-            else if (netVals.size > 1) JsonArray.of(*netVals.toTypedArray()).also { obj["network"] = it }
-        }
-        if (protocol.isNotBlank()) {
-            val protoVals = protocol.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
-            if (protoVals.size == 1) obj["protocol"] = protoVals[0]
-            else if (protoVals.size > 1) JsonArray.of(*protoVals.toTypedArray()).also { obj["protocol"] = it }
-        }
+        if (ip_version.isNotBlank()) obj["ip_version"] = QtStrings.toInt(ip_version)
+        if (network.isNotBlank()) obj["network"] = network.trim()
+        if (protocol.isNotBlank()) obj["protocol"] = protocol.trim()
         putStrings(obj, "inbound", inbound)
         putStrings(obj, "domain", domain)
         putStrings(obj, "domain_suffix", domain_suffix)

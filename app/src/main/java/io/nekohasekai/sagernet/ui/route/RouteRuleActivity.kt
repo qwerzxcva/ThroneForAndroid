@@ -268,40 +268,14 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             if (!host.loaded) return
             addPreferencesFromResource(R.xml.route_rule_preferences)
 
-            // Add JSON import button
-            val jsonPastePref = Preference(requireContext()).apply {
-                key = "jsonPaste"
-                title = getString(R.string.route_rule_json_paste)
-            }
-            jsonPastePref.setOnPreferenceClickListener {
+            setupOutbounds()
+            findPreference<Preference>("jsonPaste")?.setOnPreferenceClickListener {
                 showJsonPasteDialog()
                 true
             }
-            preferenceScreen.addPreference(jsonPastePref)
-
-            setupOutbounds()
-            for (key in listOf("action", "reject_method", "strategy", "ip_version")) {
+            for (key in listOf("action", "reject_method", "strategy", "network", "protocol", "ip_version")) {
                 findPreference<SimpleMenuPreference>(key)?.ensureValue()
             }
-            // network and protocol support multi-select (join with newline for storage)
-            for (key in listOf("network", "protocol")) {
-                val multiPref = findPreference<MultiSelectListPreference>(key)
-                multiPref?.setOnPreferenceChangeListener { _, newVal ->
-                    val joined = when (newVal) {
-                        is Collection<*> -> newVal.joinToString("\n") { it.toString() }
-                        is String -> newVal
-                        else -> return@setOnPreferenceChangeListener false
-                    }
-                    DataStore.profileCacheStore.putString(key, joined)
-                    true
-                }
-                // Restore existing value from store
-                val stored = DataStore.profileCacheStore.getString(key)
-                if (!stored.isNullOrBlank()) {
-                    multiPref?.values = stored.split("\n").filter { it.isNotBlank() }.toMutableSet()
-                }
-            }
-
             val multiline = LIST_KEYS - setOf("rule_set", "package_name", "rules_json")
             multilineInput(*multiline.toTypedArray())
             // rules_json is raw JSON, not line-separated values — use plain EditTextPreference

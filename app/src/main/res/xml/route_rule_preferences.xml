@@ -130,20 +130,18 @@
             app:dialogMessage="@string/route_rule_port_range_hint"
             app:key="source_port_range"
             app:title="@string/route_rule_source_port_range" />
-        <androidx.preference.MultiSelectListPreference
+        <moe.matsuri.nb4a.ui.SimpleMenuPreference
             app:entries="@array/route_rule_network_entries"
             app:entryValues="@array/route_rule_network_values"
             app:key="network"
             app:title="@string/route_rule_network"
-            app:useSimpleSummaryProvider="true"
-            app:persistent="false" />
-        <androidx.preference.MultiSelectListPreference
+            app:useSimpleSummaryProvider="true" />
+        <moe.matsuri.nb4a.ui.SimpleMenuPreference
             app:entries="@array/route_rule_protocol_entries"
             app:entryValues="@array/route_rule_protocol_values"
             app:key="protocol"
             app:title="@string/route_rule_protocol"
-            app:useSimpleSummaryProvider="true"
-            app:persistent="false" />
+            app:useSimpleSummaryProvider="true" />
         <moe.matsuri.nb4a.ui.SimpleMenuPreference
             app:entries="@array/route_rule_ip_version_entries"
             app:entryValues="@array/route_rule_ip_version_values"
