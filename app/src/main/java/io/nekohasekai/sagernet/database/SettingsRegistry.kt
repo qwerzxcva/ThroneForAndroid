@@ -194,10 +194,8 @@ object SettingsRegistry {
 
     // ------------------------------------------------------------------------------------------------ dns
 
-    @JvmField val REMOTE_DNS = string("remote_dns", "https://8.8.8.8/dns-query")
-    @JvmField val REMOTE_DNS_DISABLE_IPV6 = bool("remote_dns_disable_ipv6", false)
-    @JvmField val DIRECT_DNS = string("direct_dns", "localhost")
-    @JvmField val DIRECT_DNS_DISABLE_IPV6 = bool("direct_dns_disable_ipv6", false)
+    @JvmField val DNS_SERVERS = stringList("dns_servers", emptyList())
+    @JvmField val DNS_FALLBACK = string("dns_fallback", "")
     @JvmField val CORE_BOX_UNDERLYING_DNS = string("core_box_underlying_dns", "")
     @JvmField val DNS_FINAL_OUT = oneOf("dns_final_out", "remote", DNS_FINAL_OUTS)
     @JvmField val ENABLE_DNS_ROUTING = bool("enable_dns_routing", true)
@@ -296,6 +294,10 @@ object SettingsRegistry {
     /** Registration API hosts tried in order; empty = api.cloudflareclient.com. */
     @JvmField val WARP_API_HOSTS = stringList("warp_api_hosts", emptyList())
 
+    // ------------------------------------------------------------------------------------------------ broadcast control
+
+    @JvmField val BROADCAST_CONTROL_ENABLED = bool("broadcast_control_enabled", false)", emptyList())
+
     // ------------------------------------------------------------------------------------------------ core
 
     /** Android "warn" (decision D9; desktop "info"). */
@@ -333,6 +335,7 @@ object SettingsRegistry {
         Key.PROFILE_CURRENT, Key.PROFILE_ID, Key.PREVIEW_HINT_DISMISSED_VERSION,
         Key.UPDATE_CHECK_AUTO, Key.UPDATE_SKIPPED_VERSION_CODE, Key.RESUME_AFTER_UPDATE, Key.BATTERY_PROMPT_SHOWN,
         Key.LOG_EXPORT_REDACT, Key.HWID_FALLBACK, Key.WIFI_PERMISSION_ASKED, Key.SERVICE_ERROR,
+        Key.BROADCAST_CONTROL_ENABLED,
     )
 
     /** Keys a backup never exports and a restore never overwrites (R10 §8.3). */

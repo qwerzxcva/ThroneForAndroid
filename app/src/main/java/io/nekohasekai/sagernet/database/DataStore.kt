@@ -99,6 +99,9 @@ object DataStore : OnPreferenceDataStoreChangeListener {
         get() = configurationStore.getString(Key.WEBDAV_PATH) ?: "Throne"
         set(value) = configurationStore.putString(Key.WEBDAV_PATH, value)
 
+    // Broadcast control (AsteriskBOX-style)
+    var broadcastControlEnabled by SettingsRegistry.BROADCAST_CONTROL_ENABLED
+
     // ------------------------------------------------------------------------------------------------ desktop keys
     // SettingsRegistry: property = lowerCamelCase of the desktop key.
 
@@ -161,10 +164,8 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var routeAutoUpdateLast by SettingsRegistry.ROUTE_AUTO_UPDATE_LAST
 
     // dns
-    var remoteDns by SettingsRegistry.REMOTE_DNS
-    var remoteDnsDisableIpv6 by SettingsRegistry.REMOTE_DNS_DISABLE_IPV6
-    var directDns by SettingsRegistry.DIRECT_DNS
-    var directDnsDisableIpv6 by SettingsRegistry.DIRECT_DNS_DISABLE_IPV6
+    var dnsServers by SettingsRegistry.DNS_SERVERS
+    var dnsFallback by SettingsRegistry.DNS_FALLBACK
     var coreBoxUnderlyingDns by SettingsRegistry.CORE_BOX_UNDERLYING_DNS
     var dnsFinalOut by SettingsRegistry.DNS_FINAL_OUT
     var enableDnsRouting by SettingsRegistry.ENABLE_DNS_ROUTING

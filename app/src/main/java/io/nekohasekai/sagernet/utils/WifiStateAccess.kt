@@ -69,6 +69,12 @@ object WifiStateAccess {
         return ssid to bssid
     }
 
+    /** Returns the SSID of the currently connected Wi-Fi network, or null if not available. */
+    fun getCurrentSsid(context: Context): String? {
+        val (ssid, _) = read(context)
+        return if (ssid.isNotBlank()) ssid else null
+    }
+
     /**
      * Calls [onChange] whenever the SSID or BSSID changes while Wi-Fi rules are in use: the core re-reads the Wi-Fi
      * state only when the default interface changes, which misses roaming and hopping between networks on one wlan0.
