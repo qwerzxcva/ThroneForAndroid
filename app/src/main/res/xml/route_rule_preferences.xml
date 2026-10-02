@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <Preference
+        app:icon="@drawable/ic_social_emoji_symbols"
+        app:persistent="false"
+        app:summary="@string/route_rule_logic_hint"
+        app:title="@string/route_rule_logic_hint" />
+
+    <SwitchPreference
+        app:icon="@drawable/ic_baseline_format_shapes"
+        app:key="routeRuleSimpleMode"
+        app:summary="@string/route_rule_simple_mode_sum"
+        app:title="@string/route_rule_simple_mode" />
+
     <PreferenceCategory app:title="@string/route_rule_category_rule">
         <EditTextPreference
             app:icon="@drawable/ic_social_emoji_symbols"
@@ -130,15 +142,13 @@
             app:dialogMessage="@string/route_rule_port_range_hint"
             app:key="source_port_range"
             app:title="@string/route_rule_source_port_range" />
-        <moe.matsuri.nb4a.ui.SimpleMenuPreference
-            app:entries="@array/route_rule_network_entries"
-            app:entryValues="@array/route_rule_network_values"
+        <io.nekohasekai.sagernet.ui.settings.StringListPreference
+            app:icon="@drawable/ic_baseline_network_cell_24"
             app:key="network"
             app:title="@string/route_rule_network"
             app:useSimpleSummaryProvider="true" />
-        <moe.matsuri.nb4a.ui.SimpleMenuPreference
-            app:entries="@array/route_rule_protocol_entries"
-            app:entryValues="@array/route_rule_protocol_values"
+        <io.nekohasekai.sagernet.ui.settings.StringListPreference
+            app:icon="@drawable/ic_baseline_protocol_24"
             app:key="protocol"
             app:title="@string/route_rule_protocol"
             app:useSimpleSummaryProvider="true" />

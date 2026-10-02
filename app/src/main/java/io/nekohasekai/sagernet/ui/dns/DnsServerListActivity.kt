@@ -24,6 +24,7 @@ class DnsServerListActivity : ThemedActivity(R.layout.layout_app_list) {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: DnsServerAdapter
     private lateinit var toolbar: Toolbar
+    private lateinit var loadingView: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,20 +38,31 @@ class DnsServerListActivity : ThemedActivity(R.layout.layout_app_list) {
 
         recyclerView = findViewById(R.id.list)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = DnsServerAdapter(emptyList()) { server ->
+        loadingView = findViewById(R.id.loading)
+        recyclerView.visibility = View.GONE
+        adapter = DnsServerAdapter(emptyList()) { server ->
             startActivity(Intent(this, DnsServerEditActivity::class.java).putExtra("server_id", server.id))
         }
+        recyclerView.adapter = adapter
         supportFragmentManager.setFragmentResultListener("refresh", this) { _, _ -> loadServers() }
         loadServers()
     }
 
     private fun loadServers() {
+        loadingView.visibility = View.VISIBLE
+        recyclerView.visibility = View.GONE
         lifecycleScope.launch {
             val servers = withContext(Dispatchers.IO) { SagerDatabase.instance.dnsServerDao().list() }
-            adapter = DnsServerAdapter(servers) { server ->
-                startActivity(Intent(this@DnsServerListActivity, DnsServerEditActivity::class.java).putExtra("server_id", server.id))
+            loadingView.visibility = View.GONE
+            if (servers.isNotEmpty()) {
+                adapter = DnsServerAdapter(servers) { server ->
+                    startActivity(Intent(this@DnsServerListActivity, DnsServerEditActivity::class.java).putExtra("server_id", server.id))
+                }
+                recyclerView.adapter = adapter
+                recyclerView.visibility = View.VISIBLE
+            } else {
+                recyclerView.visibility = View.GONE
             }
-            recyclerView.adapter = adapter
         }
     }
 

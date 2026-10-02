@@ -57,11 +57,12 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
         const val RESULT_DELETE = RESULT_FIRST_USER
 
         private const val STATE_ADVANCED = "advancedExpanded"
+        private const val STATE_SIMPLE_MODE = "simpleMode"
         private const val KEY_ADVANCED_TOGGLE = "advancedToggle"
         private const val KEY_ADVANCED_CATEGORY = "advancedCategory"
 
         private val TEXT_KEYS = listOf(
-            "name", "action", "outbound_id", "reject_method", "strategy", "network", "protocol", "ip_version",
+            "name", "action", "outbound_id", "reject_method", "strategy", "ip_version",
             "override_address", "override_port", "logical_mode", "balancer_mode",
         )
         private val LIST_KEYS = listOf(
@@ -69,15 +70,16 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             "source_ip_cidr", "port", "port_range", "source_port", "source_port_range", "inbound", "process_name",
             "process_path", "process_path_regex", "wifi_ssid", "wifi_bssid",
             "default_interface_address", "dns_server", "balancer_sticky_hash",
+            "network", "protocol",
         )
         private val BOOL_KEYS = listOf("sniff_override_dest", "ip_is_private", "source_ip_is_private", "invert", "no_drop")
 
         /** The members inside the collapsed group. */
         private val ADVANCED_KEYS = listOf(
             "domain_keyword", "domain_regex", "ip_is_private", "source_ip_cidr", "source_ip_is_private", "port",
-            "port_range", "source_port", "source_port_range", "network", "protocol", "ip_version", "inbound", "invert",
+            "port_range", "source_port", "source_port_range", "ip_version", "inbound", "invert",
             "override_address", "override_port", "no_drop", "process_name", "process_path", "process_path_regex",
-            "wifi_ssid", "wifi_bssid",
+            "wifi_ssid", "wifi_bssid", "network", "protocol",
             "logical_mode", "rules_json", "default_interface_address", "dns_server",
             "balancer_mode", "balancer_pool", "balancer_pool_tolerance", "balancer_sticky_hash",
         )
@@ -98,6 +100,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
     private var index = -1
     private var loaded = false
     private var advancedExpanded = false
+    private var simpleMode = true
 
     /** Every server profile as (id, "[group] name"). */
     private var servers: List<Pair<Long, String>> = emptyList()
@@ -125,6 +128,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
         rule = RouteJson.ruleFromJson(intent.getStringExtra(EXTRA_RULE))
         index = intent.getIntExtra(EXTRA_INDEX, -1)
         advancedExpanded = savedInstanceState?.getBoolean(STATE_ADVANCED) ?: false
+        simpleMode = savedInstanceState?.getBoolean(STATE_SIMPLE_MODE) ?: true
         onBackPressedDispatcher.addCallback(this) { close() }
 
         val fresh = savedInstanceState == null
@@ -148,6 +152,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(STATE_ADVANCED, advancedExpanded)
+        outState.putBoolean(STATE_SIMPLE_MODE, simpleMode)
     }
 
     override fun onDestroy() {
@@ -238,7 +243,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             val type = RuleType.ofId(edited.type)
             if (type != RuleType.CUSTOM && !edited.fitsType(type)) edited.type = RuleType.CUSTOM.id
             val action = edited.effectiveAction()
-            if (!RouteRuleChecks.hasConditions(edited) && (action == "route" || action == "bypass" || action == "reject")) {
+            if (!edited.hasConditions() && (action == "route" || action == "bypass" || action == "reject")) {
                 MaterialAlertDialogBuilder(this@RouteRuleActivity)
                     .setTitle(R.string.route_rule_catch_all_title)
                     .setMessage(R.string.route_rule_catch_all)
@@ -276,7 +281,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
                 showJsonPasteDialog()
                 true
             }
-            for (key in listOf("action", "reject_method", "strategy", "network", "protocol", "ip_version")) {
+            for (key in listOf("action", "reject_method", "strategy", "ip_version")) {
                 findPreference<SimpleMenuPreference>(key)?.ensureValue()
             }
             val multiline = LIST_KEYS - setOf("rule_set", "package_name", "rules_json", "default_interface_address", "dns_server", "balancer_sticky_hash")
@@ -349,6 +354,30 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
                 refreshState()
                 true
             }
+            findPreference<SwitchPreference>("routeRuleSimpleMode")!!.apply {
+                isChecked = host.simpleMode
+                setOnPreferenceChangeListener { _, newValue ->
+                    host.simpleMode = newValue as Boolean
+                    val simpleKeys = setOf("domain_suffix", "domain", "ip_cidr", "rule_set", "package_name")
+                    for (key in host.LIST_KEYS) {
+                        if (key !in simpleKeys) {
+                            findPreference<Preference>(key)?.isVisible = !host.simpleMode
+                        }
+                    }
+                    host.advancedExpanded = false
+                    findPreference<PreferenceCategory>(KEY_ADVANCED_CATEGORY)?.isVisible = false
+                    findPreference<Preference>(KEY_ADVANCED_TOGGLE)?.isVisible = false
+                    refreshState()
+                    true
+                }
+            }
+            // Set initial visibility based on simple mode
+            val simpleKeys = setOf("domain_suffix", "domain", "ip_cidr", "rule_set", "package_name")
+            for (key in LIST_KEYS) {
+                if (key !in simpleKeys) {
+                    findPreference<Preference>(key)?.isVisible = false
+                }
+            }
             refreshState()
         }
 
@@ -368,11 +397,33 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             val missing = WifiStateAccess.status(requireContext()) != WifiStateAccess.Status.OK
             val lines = LinesSummaryProvider(maxLines = 3)
             for (key in listOf("wifi_ssid", "wifi_bssid")) {
-                findPreference<EditTextPreference>(key)?.summaryProvider =
-                    Preference.SummaryProvider<EditTextPreference> { p ->
+                findPreference<EditTextPreference>(key)?.apply {
+                    summaryProvider = Preference.SummaryProvider<EditTextPreference> { p ->
                         val summary = lines.provideSummary(p)
                         if (missing) "$summary\n${getString(R.string.wifi_rule_needs_location)}" else summary
                     }
+                    // Add "Add current" action button for SSID field only
+                    if (key == "wifi_ssid") {
+                        setOnBindEditTextListener { editText ->
+                            editText.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                                0, 0, R.drawable.ic_baseline_add_24, 0
+                            )
+                            editText.setOnClickListener {
+                                val ssid = WifiStateAccess.getCurrentSsid(requireContext())
+                                if (!ssid.isNullOrBlank()) {
+                                    val current = editText.text.toString().trim()
+                                    editText.setText(if (current.isEmpty()) ssid else "$current\n$ssid")
+                                } else if (!missing) {
+                                    MaterialAlertDialogBuilder(requireContext())
+                                        .setTitle(R.string.route_rule_wifi_ssid_empty_title)
+                                        .setMessage(R.string.route_rule_wifi_ssid_empty)
+                                        .setPositiveButton(android.R.string.ok, null)
+                                        .show()
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

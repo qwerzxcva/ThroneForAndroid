@@ -21,14 +21,24 @@ class DnsSettingsFragment : SettingsScreenFragment(R.xml.settings_dns) {
             startActivity(Intent(context, DnsServerListActivity::class.java))
             true
         }
-        // remote_dns and direct_dns removed; DNS servers are now managed per-route via dns_server
-        checkText(SettingsRegistry.CORE_BOX_UNDERLYING_DNS.key, R.string.invalid_dns_address) { true }
+        checkText(SettingsRegistry.CORE_BOX_UNDERLYING_DNS.key, R.string.invalid_dns_address) { it.isNotEmpty() }
         reloadOn(
             SettingsRegistry.DNS_FINAL_OUT.key, SettingsRegistry.ENABLE_DNS_ROUTING.key,
             SettingsRegistry.FAKEIP_DISABLE_IPV6.key, SettingsRegistry.DNS_USE_HOSTS.key,
         )
         pref<EditTextPreference>(SettingsRegistry.CORE_BOX_UNDERLYING_DNS.key).summaryProvider =
             DefaultSummaryProvider("local")
+
+        // DNS Servers list
+        pref<StringListPreference>(SettingsRegistry.DNS_SERVERS.key).also { pref ->
+            pref.dialogMessage = getString(R.string.dns_servers_summary)
+        }
+
+        // DNS Fallback
+        pref<EditTextPreference>(SettingsRegistry.DNS_FALLBACK.key).also { pref ->
+            pref.dialogMessage = getString(R.string.dns_fallback_summary)
+            pref.summaryProvider = DefaultSummaryProvider("")
+        }
 
         // FakeIP Disable IPv6 only means something with FakeIP on (dialog_manage_routes.cpp:328-329).
         val fakeIpv6 = pref<SwitchPreference>(SettingsRegistry.FAKEIP_DISABLE_IPV6.key)

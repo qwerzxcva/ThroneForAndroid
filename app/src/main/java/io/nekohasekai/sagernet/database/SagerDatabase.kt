@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
         DnsServerEntity::class,
         SettingEntry::class, MarkerEntity::class,
     ],
-    version = 13,
+    version = 14,
     autoMigrations = [
         AutoMigration(from = 8, to = 9),
         AutoMigration(from = 12, to = 13),
@@ -160,6 +160,20 @@ abstract class SagerDatabase : RoomDatabase() {
             }
         }
 
+        /** 13 -> 14: add dns_servers table for custom DNS server entries. */
+        val MIGRATION_13_14: Migration = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `dns_servers` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`tag` TEXT NOT NULL DEFAULT '', `address` TEXT NOT NULL DEFAULT '', `type` TEXT NOT NULL DEFAULT 'udp', " +
+                        "`bind_interface` TEXT NOT NULL DEFAULT '', `detour` TEXT NOT NULL DEFAULT '', " +
+                        "`disable_cache` INTEGER NOT NULL DEFAULT 0, `disable_expire` INTEGER NOT NULL DEFAULT 0, " +
+                        "`ip_is_private` INTEGER NOT NULL DEFAULT 0, `client_subnet` TEXT NOT NULL DEFAULT '', " +
+                        "`reject_expired` INTEGER NOT NULL DEFAULT 1, `user_order` INTEGER NOT NULL DEFAULT 0)"
+                )
+            }
+        }
+
         /** Configs.cpp:35-39: a new database starts with an ordinary group named "Default". */
         private val callback = object : RoomDatabase.Callback() {
             override fun onCreate(db: SupportSQLiteDatabase) {
@@ -179,7 +193,7 @@ abstract class SagerDatabase : RoomDatabase() {
         @OptIn(DelicateCoroutinesApi::class)
         private fun buildProfileDatabase(): SagerDatabase =
             Room.databaseBuilder(SagerNet.application, SagerDatabase::class.java, Key.DB_PROFILE)
-                .addMigrations(MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                .addMigrations(MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                 .addCallback(callback)
                 .setJournalMode(JournalMode.TRUNCATE)
                 .allowMainThreadQueries()
