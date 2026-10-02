@@ -76,13 +76,15 @@ jobs:
 
       - name: Build and sign release APK (arm64 only)
         run: |
+          # Create signing properties
           cat > app/release.properties << 'EOF'
           signing.storeFile=signing.keystore
           signing.storePassword=throne123
           signing.keyAlias=throne
           signing.keyPassword=throne123
           EOF
-          ./gradlew assembleOssRelease -Psigning.enabled=true
+          # Build only arm64 APK
+          ./gradlew assembleOssRelease -Psigning.enabled=true -PabiFilter=arm64-v8a
 
       - name: List built APKs
         run: find app/build/outputs/apk -name "*.apk" -exec ls -lh {} \;
