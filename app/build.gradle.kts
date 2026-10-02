@@ -42,12 +42,15 @@ android {
             if (file("release.properties").exists()) {
                 val props = java.util.Properties()
                 props.load(file("release.properties").inputStream())
-                signingConfig = signingConfigs.create("release") {
-                    storeFile = file(props["signing.storeFile"] as String)
-                    storePassword = props["signing.storePassword"] as String
-                    keyAlias = props["signing.keyAlias"] as String
-                    keyPassword = props["signing.keyPassword"] as String
+                signingConfigs {
+                    create("release") {
+                        storeFile = file(props["signing.storeFile"] as String)
+                        storePassword = props["signing.storePassword"] as String
+                        keyAlias = props["signing.keyAlias"] as String
+                        keyPassword = props["signing.keyPassword"] as String
+                    }
                 }
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
