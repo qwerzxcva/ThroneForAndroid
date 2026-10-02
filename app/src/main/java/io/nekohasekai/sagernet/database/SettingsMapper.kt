@@ -81,9 +81,15 @@ object SettingsMapper {
             perAppPackages = GeneratorSettings.splitLines(DataStore.individual),
             httpProxyEnabled = mixedEnabled,
             httpProxyBypassDomains = GeneratorSettings.splitLines(DataStore.httpProxyBypass),
-            remoteDns = DataStore.remoteDns,
-            remoteDnsDisableIpv6 = DataStore.remoteDnsDisableIpv6,
-            directDns = DataStore.directDns,
+            remoteDns = DataStore.dnsServers.firstOrNull() ?: "https://8.8.8.8/dns-query",
+            remoteDnsDisableIpv6 = false,
+            directDns = DataStore.dnsServers.lastOrNull()?.let { parts ->
+                val parts2 = parts.split(";")
+                if (parts2.size >= 3 && parts2[2] == "direct") parts2[0] else "localhost"
+            } ?: "localhost",
+            directDnsDisableIpv6 = false,
+            dnsServers = DataStore.dnsServers,
+            dnsFallback = DataStore.dnsFallback,
             underlyingDns = DataStore.coreBoxUnderlyingDns,
             dnsCacheCapacity = DataStore.dnsCacheCapacity,
             dnsDisableCache = DataStore.dnsDisableCache,
@@ -153,7 +159,7 @@ object SettingsMapper {
         xrayMuxConcurrency = DataStore.xrayMuxConcurrency,
         xrayMuxDefaultOn = DataStore.xrayMuxDefaultOn,
         defaultDomainStrategy = DataStore.outboundDomainStrategy,
-        directDnsDisableIpv6 = DataStore.directDnsDisableIpv6,
+        directDnsDisableIpv6 = false,
         useDnsObject = DataStore.useDnsObject,
     )
 

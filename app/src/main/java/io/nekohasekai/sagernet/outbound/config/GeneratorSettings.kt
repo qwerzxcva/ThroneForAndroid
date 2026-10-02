@@ -70,6 +70,10 @@ data class GeneratorSettings(
     val httpProxyBypassDomains: List<String> = emptyList(),
 
     // ---- dns (SettingsRepo.h:179-197, :296)
+    /** DNS servers list: each entry is "address;transport;detour" (transport defaults udp, detour defaults direct). */
+    val dnsServers: List<String> = emptyList(),
+    /** Fallback DNS server address (desktop address syntax). */
+    val dnsFallback: String = "",
     /** remote_dns (desktop address syntax, see DnsServers.buildDnsObj). */
     val remoteDns: String = "https://8.8.8.8/dns-query",
     /** remote_dns_disable_ipv6. */
