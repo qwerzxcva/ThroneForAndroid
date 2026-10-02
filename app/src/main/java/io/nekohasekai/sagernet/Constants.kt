@@ -66,6 +66,7 @@ object Key {
     const val WEBDAV_USERNAME = "webdavUsername"
     const val WEBDAV_PASSWORD = "webdavPassword"
     const val WEBDAV_PATH = "webdavPath"
+    const val BROADCAST_CONTROL_ENABLED = "broadcastControlEnabled"
 }
 
 object Action {
