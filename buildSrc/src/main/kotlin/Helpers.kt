@@ -178,14 +178,12 @@ fun Project.setupApp() {
             }
         }
 
-        // ThroneCore is built for android/arm64, android/arm and android/amd64 only.
+        // Only build arm64-v8a for smaller APK size
         splits.abi {
             reset()
             isEnable = true
             isUniversalApk = false
-            include("armeabi-v7a")
             include("arm64-v8a")
-            include("x86_64")
         }
 
         flavorDimensions += "vendor"
