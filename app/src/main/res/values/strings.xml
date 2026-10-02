@@ -63,6 +63,10 @@
     <string name="connection_test_error">Failed: %s</string>
     <string name="remote_dns">Remote DNS</string>
     <string name="direct_dns">Direct DNS</string>
+    <string name="dns_servers_title">DNS Servers</string>
+    <string name="dns_servers_summary">One per line: server;transport;detour (e.g. 1.1.1.1;https:///dns-query;proxy)</string>
+    <string name="dns_fallback_title">Fallback DNS</string>
+    <string name="dns_fallback_summary">Default DNS server when all configured servers fail</string>
     <string name="enable_dns_routing">Enable DNS routing</string>
     <string name="dns_routing_message">Resolve domains in bypass routes with Direct DNS. Be aware of
         potential DNS leaks</string>
@@ -847,6 +851,9 @@
     <string name="route_rule_process_path_regex">Process path regex (desktop only)</string>
     <string name="route_rule_wifi_ssid">Wi-Fi SSID</string>
     <string name="route_rule_wifi_bssid">Wi-Fi BSSID</string>
+    <string name="route_rule_wifi_add_current">Add current</string>
+    <string name="route_rule_wifi_ssid_empty_title">No Wi-Fi connected</string>
+    <string name="route_rule_wifi_ssid_empty">No Wi-Fi network is currently connected. Please connect to a Wi-Fi network first.</string>
     <string name="route_rule_unset">Not set</string>
     <string name="route_rule_any">Any</string>
     <string name="route_rule_invalid_title">Invalid rule</string>
@@ -856,6 +863,11 @@
     <string name="route_rule_unknown_rule_sets">Unknown rule-sets: %s\n\nPick names from the rule-set list, or use the URL of an .srs file.</string>
     <string name="route_rule_catch_all_title">No conditions</string>
     <string name="route_rule_catch_all">This rule has no conditions, so it matches every connection. Save it anyway?</string>
+    <string name="route_rule_logic_hint">每行内条件为 OR 关系，跨类别（域名/IP/应用/网络）为 AND 关系</string>
+    <string name="route_rule_simple_mode">简洁模式</string>
+    <string name="route_rule_simple_mode_sum">仅显示常用字段（域名、IP、应用）</string>
+    <string name="route_rule_advanced_mode">Advanced mode</string>
+    <string name="route_rule_advanced_mode_sum">Show all fields (network, protocol, ports, …)</string>
     <string name="rule_set_picker_title">Rule-sets</string>
     <string name="rule_set_search">Search rule-sets…</string>
     <string name="rule_set_add_url">Add URL</string>
@@ -1135,6 +1147,8 @@
     <string name="profile_row_upload">Upload %s</string>
     <string name="profile_row_ip">IP %s</string>
     <string name="profile_row_traffic">Uploaded %1$s, downloaded %2$s</string>
+    <string name="profile_disable">Disable</string>
+    <string name="profile_enable">Enable</string>
     <string name="profiles_empty">No profiles in this group</string>
     <string name="profiles_empty_hint">Use the \"Add profile\" button in the toolbar to import from the clipboard, a file or a QR code, or to create one. A copied subscription URL can be added as a subscription too.</string>
     <string name="profiles_empty_subscription">No profiles in this subscription yet</string>
@@ -1750,7 +1764,18 @@
     <string name="picker_add_package_title">Add package name</string>
     <string name="picker_invalid_package">Not a valid package name: %s</string>
 
-    <!-- platform: TV and export fallbacks -->
+    <!-- Broadcast Control -->
+    <string name="cag_broadcast_control">Broadcast control</string>
+    <string name="cag_broadcast_control_sum">Allow controlling the proxy via ADB broadcasts (org.nekohasekai.sagernet.action.*)</string>
+    <string name="broadcast_control_disabled">Disabled</string>
+    <string name="broadcast_proxy_start">Proxy start requested</string>
+    <string name="broadcast_proxy_stop">Proxy stop requested</string>
+    <string name="broadcast_proxy_toggle">Proxy toggle requested</string>
+    <string name="broadcast_subs_update">Subscription update requested</string>
+    <string name="broadcast_subs_refresh_group">Group refresh requested: %s</string>
+
+    <!-- External Control -->
+    <string name="external_control">External control</string>
     <string name="tv_previous_server">Previous server</string>
     <string name="tv_next_server">Next server</string>
     <string name="save_fallback_title">No file picker</string>
@@ -1801,4 +1826,9 @@
     <string name="dns_server_reject_expired">Reject Expired</string>
     <string name="dns_server_management">DNS Server Management</string>
     <string name="dns_server_management_sum">Manage custom DNS servers for route rules</string>
+    <!-- subscription on-update action -->
+    <string name="grp_on_update_action">On update</string>
+    <string name="grp_on_update_rebuild">Rebuild config only</string>
+    <string name="grp_on_update_rebuild_reload">Rebuild and reload core</string>
+    <string name="grp_on_update_nothing">Do nothing</string>
 </resources>

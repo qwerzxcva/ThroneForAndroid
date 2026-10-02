@@ -8,7 +8,7 @@
         app:title="@string/route_rule_logic_hint" />
 
     <SwitchPreference
-        app:icon="@drawable/ic_baseline_format_shapes"
+        app:icon="@drawable/ic_baseline_code_24"
         app:key="routeRuleSimpleMode"
         app:summary="@string/route_rule_simple_mode_sum"
         app:title="@string/route_rule_simple_mode" />
@@ -143,12 +143,12 @@
             app:key="source_port_range"
             app:title="@string/route_rule_source_port_range" />
         <io.nekohasekai.sagernet.ui.settings.StringListPreference
-            app:icon="@drawable/ic_baseline_network_cell_24"
+            app:icon="@drawable/ic_baseline_vpn_key_24"
             app:key="network"
             app:title="@string/route_rule_network"
             app:useSimpleSummaryProvider="true" />
         <io.nekohasekai.sagernet.ui.settings.StringListPreference
-            app:icon="@drawable/ic_baseline_protocol_24"
+            app:icon="@drawable/ic_baseline_http_24"
             app:key="protocol"
             app:title="@string/route_rule_protocol"
             app:useSimpleSummaryProvider="true" />
