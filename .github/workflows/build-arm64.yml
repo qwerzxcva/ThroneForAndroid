@@ -1,0 +1,51 @@
+name: Build ARM v8 APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+concurrency:
+  group: build-arm64-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-arm64:
+    name: Build ARM64 APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: ThroneCore AAR and schema
+        uses: ./.github/actions/throne-core
+
+      - name: Fetch routeprofiles snapshot
+        uses: ./.github/actions/routeprofiles
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-provider: basic
+
+      - name: Build ARM64 Debug APK
+        run: |
+          set -euo pipefail
+          ./gradlew --stacktrace assembleOssDebug --no-build-cache
+          echo "Build completed successfully"
+
+      - name: Upload ARM64 APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: Throne-arm64-v8a-debug
+          path: app/build/outputs/apk/oss/debug/Throne-*-arm64-v8a-debug.apk
+          if-no-files-found: error
