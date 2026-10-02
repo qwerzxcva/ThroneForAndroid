@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Release APK
+    name: Build Signed Release APK
     runs-on: ubuntu-latest
 
     steps:
@@ -71,26 +71,33 @@ jobs:
           keytool -genkeypair -v -keystore signing.keystore -alias throne \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass throne123 -keypass throne123 \
-            -dname "CN=Throne, OU=Dev, O=Throne, L=City, S=State, C=CN"
-          cp signing.keystore app/signing.keystore
+            -dname "CN=Throne Dev, OU=Dev, O=Throne, L=City, S=State, C=CN"
 
-      - name: Build and sign release APK (arm64 only)
+      - name: Build and sign release APK
         run: |
-          # Create signing properties
-          cat > app/release.properties << 'EOF'
-          signing.storeFile=signing.keystore
-          signing.storePassword=throne123
-          signing.keyAlias=throne
-          signing.keyPassword=throne123
-          EOF
-          # Build only arm64 APK
-          ./gradlew assembleOssRelease -Psigning.enabled=true -PabiFilter=arm64-v8a
+          # Configure signing
+          echo "signing.storeFile=signing.keystore" > local.properties
+          echo "signing.storePassword=throne123" >> local.properties
+          echo "signing.keyAlias=throne" >> local.properties
+          echo "signing.keyPassword=throne123" >> local.properties
+          
+          # Build signed release APK
+          ./gradlew assembleOssRelease
 
-      - name: List built APKs
-        run: find app/build/outputs/apk -name "*.apk" -exec ls -lh {} \;
+      - name: Verify signed APK
+        run: |
+          echo "=== 构建产物 ==="
+          find app/build/outputs/apk -name "*.apk" -exec ls -lh {} \;
+          echo ""
+          echo "=== 验证签名 ==="
+          for apk in app/build/outputs/apk/oss/release/*.apk; do
+            echo "APK: $apk"
+            jarsigner -verify -verbose -certs "$apk" 2>&1 | head -5
+            echo ""
+          done
 
-      - name: Upload Release APK
+      - name: Upload Signed Release APK
         uses: actions/upload-artifact@v4
         with:
-          name: Throne-release-arm64
+          name: Throne-signed-release-arm64
           path: app/build/outputs/apk/oss/release/*.apk
