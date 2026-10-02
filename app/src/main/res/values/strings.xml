@@ -1807,7 +1807,6 @@
     <string name="route_rule_json_paste_success">Imported %d field(s) from JSON</string>
     <string name="route_rule_json_paste">Import from JSON…</string>
     <!-- DNS Server Management -->
-    <string name="dns_servers_title">DNS Servers</string>
     <string name="dns_server_add">Add DNS Server</string>
     <string name="dns_server_edit">Edit DNS Server</string>
     <string name="dns_server_delete_title">Delete DNS Server</string>
