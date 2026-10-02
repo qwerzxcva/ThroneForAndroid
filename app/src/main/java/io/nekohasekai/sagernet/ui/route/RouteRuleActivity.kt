@@ -102,6 +102,8 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
     private var advancedExpanded = false
     private var simpleMode = true
 
+    fun getListKeys(): List<String> = LIST_KEYS
+
     /** Every server profile as (id, "[group] name"). */
     private var servers: List<Pair<Long, String>> = emptyList()
 
@@ -243,7 +245,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
             val type = RuleType.ofId(edited.type)
             if (type != RuleType.CUSTOM && !edited.fitsType(type)) edited.type = RuleType.CUSTOM.id
             val action = edited.effectiveAction()
-            if (!edited.hasConditions() && (action == "route" || action == "bypass" || action == "reject")) {
+            if (!RouteRuleChecks.hasConditions(edited) && (action == "route" || action == "bypass" || action == "reject")) {
                 MaterialAlertDialogBuilder(this@RouteRuleActivity)
                     .setTitle(R.string.route_rule_catch_all_title)
                     .setMessage(R.string.route_rule_catch_all)
@@ -359,7 +361,7 @@ class RouteRuleActivity : ThemedActivity(R.layout.layout_config_settings), OnPre
                 setOnPreferenceChangeListener { _, newValue ->
                     host.simpleMode = newValue as Boolean
                     val simpleKeys = setOf("domain_suffix", "domain", "ip_cidr", "rule_set", "package_name")
-                    for (key in host.LIST_KEYS) {
+                    for (key in host.getListKeys()) {
                         if (key !in simpleKeys) {
                             findPreference<Preference>(key)?.isVisible = !host.simpleMode
                         }

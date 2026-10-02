@@ -3,6 +3,7 @@ package io.nekohasekai.sagernet.ui.settings
 import androidx.preference.EditTextPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
+import androidx.preference.StringListPreference
 import androidx.preference.SwitchPreference
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.database.SettingValidators
