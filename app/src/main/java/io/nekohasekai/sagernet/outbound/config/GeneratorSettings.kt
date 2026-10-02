@@ -80,6 +80,8 @@ data class GeneratorSettings(
     val remoteDnsDisableIpv6: Boolean = false,
     /** direct_dns. */
     val directDns: String = "localhost",
+    /** direct_dns_disable_ipv6. */
+    val directDnsDisableIpv6: Boolean = false,
     /** core_box_underlying_dns: the dns-local server, "" means "local". */
     val underlyingDns: String = "",
     /** dns_cache_capacity. */
