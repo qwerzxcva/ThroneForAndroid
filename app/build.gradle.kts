@@ -1,5 +1,7 @@
 @file:Suppress("UnstableApiUsage")
 
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -40,7 +42,7 @@ android {
             isShrinkResources = false
             // Configure signing
             if (file("release.properties").exists()) {
-                val props = java.util.Properties()
+                val props = Properties()
                 props.load(file("release.properties").inputStream())
                 signingConfigs {
                     create("release") {
