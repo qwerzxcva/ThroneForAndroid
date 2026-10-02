@@ -296,7 +296,7 @@ object SettingsRegistry {
 
     // ------------------------------------------------------------------------------------------------ broadcast control
 
-    @JvmField val BROADCAST_CONTROL_ENABLED = bool("broadcast_control_enabled", false)", emptyList())
+    @JvmField val BROADCAST_CONTROL_ENABLED = bool("broadcast_control_enabled", false)
 
     // ------------------------------------------------------------------------------------------------ core
 
